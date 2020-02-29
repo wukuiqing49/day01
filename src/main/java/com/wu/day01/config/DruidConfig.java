@@ -10,44 +10,49 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 配置sql 阿里的限制
+ */
+
 @Configuration
 public class DruidConfig {
-    @Bean
-    @ConfigurationProperties(prefix = "spring.datasource")
-    public DataSource druid(){
-        return  new DruidDataSource();
-    }
-
-    //配置 阿里Druid 数据源的监控
-
     /**
-     * 配置后台的servlet
      * @return
+     * @function
      */
     @Bean
-    public ServletRegistrationBean statViewServlet(){
-        ServletRegistrationBean bean= new ServletRegistrationBean(new StatViewServlet(),"/drud/");
-        HashMap<String,Object> hashMap=new HashMap<>();
-        hashMap.put("loginUsername","admin");
-        hashMap.put("loginPassword","123456");
-        bean.setInitParameters(hashMap);
+    @ConfigurationProperties(prefix = "spring.datasource")
+    public DataSource druid() {
+        return new DruidDataSource();
+    }
+
+    //配置Druid的监控
+    // 1、配置一个管理后台的Servlet
+    @Bean
+    public ServletRegistrationBean statViewServlet() {
+        ServletRegistrationBean bean = new ServletRegistrationBean(new StatViewServlet(), "/druid/*");
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("loginUsername", "admin");
+        initParams.put("loginPassword", "123456");
+        initParams.put("allow", "");//默认就是允许所有访问
+        initParams.put("deny", "127.0.0.1");
+        bean.setInitParameters(initParams);
         return bean;
     }
 
+    //2、配置一个web监控的filter
     @Bean
-    public FilterRegistrationBean myFilter(){
+    public FilterRegistrationBean webStatFilter() {
         FilterRegistrationBean bean = new FilterRegistrationBean();
         bean.setFilter(new WebStatFilter());
-
-        Map<String,String> initParams = new HashMap<>();
-        initParams.put("exclusions","*.js,*.css,/druid/*");
-
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put("exclusions", "*.js,*.css,/druid/*");
         bean.setInitParameters(initParams);
-
-        bean.addUrlPatterns("/*");
+        bean.setUrlPatterns(Arrays.asList("/*"));
         return bean;
     }
 }
